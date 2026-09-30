@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>테스터 품앗이</title>
+<style>
+:root{--bg:#f5f5f2;--card:#fff;--ink:#141414;--sub:#777;--line:#e6e6e1;--ok:#1f9d55;--warn:#d97706;--red:#dc2626}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e0e0e;--card:#1a1a1a;--ink:#f0f0f0;--sub:#999;--line:#2a2a2a}}
+*{box-sizing:border-box;margin:0;font-family:-apple-system,"Pretendard","Malgun Gothic",sans-serif}
+body{background:var(--bg);color:var(--ink);max-width:760px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:24px}h2{font-size:17px;margin:26px 0 10px}
+.sub{color:var(--sub);font-size:14px;margin-top:4px;line-height:1.6}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+.stat b{display:block;font-size:24px}.stat span{font-size:12px;color:var(--sub)}
+input,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:15px;background:var(--bg);color:var(--ink)}
+textarea{min-height:120px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:140px}
+button{border:none;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;cursor:pointer;background:var(--ink);color:var(--bg)}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.p{display:flex;align-items:center;gap:10px}
+.p .info{flex:1;min-width:0}.p .info b{display:block}.p small{color:var(--sub)}
+.bar{height:6px;background:var(--line);border-radius:9px;margin-top:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ok)}
+.tag{font-size:12px;padding:3px 8px;border-radius:99px;color:#fff;white-space:nowrap}
+.done{background:var(--ok)}.todo{background:var(--warn)}
+ol{padding-left:20px;line-height:1.8;font-size:14px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;opacity:0;transition:.3s}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<h1>🤝 테스터 품앗이</h1>
+<p class="sub">구글 플레이 정식 출시 조건: 테스터 12명이 14일 동안 참여. 여기서 글 올리기부터 매일 확인까지 한 번에 관리해요.</p>
+
+<div class="stats">
+  <div class="stat"><b id="sMine">0</b><span>내 앱 테스터 (목표 15)</span></div>
+  <div class="stat"><b id="sToday">0/0</b><span>오늘 열어본 상대 앱</span></div>
+  <div class="stat"><b id="sDay">-</b><span>테스트 진행일</span></div>
+</div>
+
+<h2>① 내 정보 (한 번만)</h2>
+<div class="card">
+  <div class="row">
+    <input id="myLink" placeholder="내 앱 테스트 참여 링크 (play.google.com/apps/testing/...)">
+    <input id="myStart" type="date" title="비공개 테스트 시작일">
+  </div>
+  <textarea id="myPitch" style="margin-top:8px" placeholder="내 앱 소개 (영어, 2~3줄) — 모집 글에 들어가요"></textarea>
+</div>
+</div>
+
+<h2>② 모집 글 올리기 (버튼 → 확인 → Post)</h2>
+<div class="card">
+  <div class="row" id="subs"></div>
+  <p class="sub">레딧 규칙상 자동 게시는 계정 정지 위험이 있어요. 내용이 채워진 글쓰기 화면만 열어 드려요.</p>
+</div>
+
+<h2>③ 🔎 품앗이 상대 고르기 <small class="sub" id="candAt"></small></h2>
+<p class="sub">레딧에서 테스터를 찾는 최신 글이에요. <b>🤝 품앗이</b>를 누르면 ① 상대 앱 참여 페이지와 ② 레딧 글이 열리고, ③ 답글이 복사돼요. 댓글 칸에 붙여 넣기만 하세요.</p>
+<div id="cands"></div>
+
+<h2>③-2 직접 추가 (다른 곳에서 만난 상대)</h2>
+<div class="card">
+  <div class="row">
+    <input id="pName" placeholder="상대 이름 (레딧 아이디)">
+    <input id="pLink" placeholder="상대 앱 테스트 링크">
+  </div>
+  <div class="row" style="margin-top:8px">
+    <button onclick="addP()">추가</button>
+    <button class="ghost" onclick="copyReply()">📋 상대에게 보낼 답글 복사</button>
+  </div>
+</div>
+
+<h2>④ 매일 할 일</h2>
+<div class="card">
+  <div class="row"><button onclick="openAll()">🚀 오늘 안 연 상대 앱 전부 열기</button></div>
+  <p class="sub">구글은 설치만 하고 안 쓰는 걸 걸러내요. 상대 앱을 매일 1분씩 실제로 써 주세요. 그래야 상대도 내 앱을 열어줘요.</p>
+</div>
+<div id="list"></div>
+
+<h2>꿀팁</h2>
+<div class="card"><ol>
+  <li><b>12명이 아니라 15~18명</b>을 모으세요. 중간에 빠지는 사람이 꼭 생겨요.</li>
+  <li><b>Testers Community 앱</b>(플레이스토어, 무료)은 다른 앱 3개를 테스트하면 내 앱을 올릴 수 있어요. 레딧과 같이 쓰면 가장 빨라요.</li>
+  <li>레딧 외에 <b>r/androiddev 스왑 스레드</b>, 디스코드·텔레그램 테스터 교환방도 있어요.</li>
+  <li>14일이 끝나면 구글이 "테스트에서 뭘 배웠나" 같은 질문을 해요. 상대에게 받은 피드백을 여기 메모해 두면 답하기 쉬워요.</li>
+  <li>가짜 설치만 해주는 유료 서비스는 거절 위험이 커요. 쓰려면 실제 사용까지 보장하는 곳으로 고르세요.</li>
+</ol></div>
+
+<div class="toast" id="toast"></div>
+<script src="candidates.js"></script>
+<script>
+const SUBS=[["androiddevtesters","r/androiddevtesters"],["AndroidClosedTesting","r/AndroidClosedTesting"],["TestersCommunity","r/TestersCommunity"]];
+let S={myLink:"",myStart:"",partners:[]};
+try{S=JSON.parse(localStorage.getItem("swap"))||S}catch(e){}
+const save=()=>{try{localStorage.setItem("swap",JSON.stringify(S))}catch(e){}};
+const today=()=>new Date().toISOString().slice(0,10);
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(t){toast.el.textContent=t;toast.el.classList.add("show");setTimeout(()=>toast.el.classList.remove("show"),1500)}
+toast.el=document.getElementById("toast");
+
+S.myPitch??=`"Did I turn it off?" – asks you to check the stove/door when you leave home
+One tap (optional photo), and later on the bus you can see "Checked at 08:12". No account, location never leaves your phone.`;
+myLink.value=S.myLink;myStart.value=S.myStart;myPitch.value=S.myPitch;
+myPitch.oninput=()=>{S.myPitch=myPitch.value;save()};
+myLink.oninput=()=>{S.myLink=myLink.value.trim();save()};
+myStart.onchange=()=>{S.myStart=myStart.value;save();render()};
+
+const postText=()=>`Hi! I need testers for Google Play's 14-day closed test and I'll test yours back — comment your link and I'll join within 24h, and open your app every day.
+
+${S.myPitch||"<about my app>"}
+
+Join: ${S.myLink||"<my test link>"}
+
+Please keep it for 14 days 🙏 Feedback very welcome!`;
+const title=()=>`[Test for test] ${(S.myPitch||"My app").split("\n")[0].slice(0,120)}`;
+
+subs.innerHTML=SUBS.map(([s,n])=>`<button class="ghost" onclick="post('${s}')">${n}</button>`).join("");
+function post(s){if(!S.myLink)return toast("① 내 테스트 링크부터 넣어주세요");window.open(`https://www.reddit.com/r/${s}/submit?type=TEXT&title=${encodeURIComponent(title())}&text=${encodeURIComponent(postText())}`,"_blank")}
+
+// 클립보드 API가 없는 환경(file:// 등)에서도 복사되게 예전 방식으로 대체한다
+function copy(t){const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy")}catch(e){}a.remove();navigator.clipboard?.writeText(t).catch(()=>{})}
+function copyReply(){copy(`Joined and installed your app ✅ I'll open it daily for 14 days. Here's mine: ${S.myLink||"<my test link>"} — thanks!`);toast("복사했어요. 레딧 댓글에 붙여 넣으세요")}
+
+function addP(){const name=pName.value.trim(),link=pLink.value.trim();if(!name||!link)return toast("이름과 링크를 넣어주세요");
+  S.partners.push({id:Date.now()+"",name,link,since:today(),days:[],testsMine:false,note:""});pName.value=pLink.value="";save();render();window.open(link,"_blank")}
+function openP(id){const p=S.partners.find(x=>x.id===id);if(!p.days.includes(today()))p.days.push(today());save();render();window.open(p.link,"_blank")}
+function openAll(){const t=S.partners.filter(p=>!p.days.includes(today()));if(!t.length)return toast("오늘은 다 열었어요 👍");t.forEach(p=>openP(p.id))}
+function toggleMine(id){const p=S.partners.find(x=>x.id===id);p.testsMine=!p.testsMine;save();render()}
+function note(id){const p=S.partners.find(x=>x.id===id);const n=prompt(`${p.name}에게 받은 피드백 메모`,p.note);if(n!==null){p.note=n;save();render()}}
+function del(id){if(confirm("이 상대를 목록에서 뺄까요?")){S.partners=S.partners.filter(p=>p.id!==id);save();render()}}
+
+S.skipped??=[];
+const ago=t=>{const h=Math.floor((Date.now()-new Date(t))/36e5);return h<1?"방금":h<24?`${h}시간 전`:`${Math.floor(h/24)}일 전`};
+function swap(i){const c=window.CANDIDATES[i];
+  if(!S.myLink)return toast("① 내 테스트 링크부터 넣어주세요");
+  S.partners.push({id:Date.now()+"",name:c.author,link:c.join,post:c.post,since:today(),days:[today()],testsMine:false,note:""});save();
+  copy(`Joined your test ✅ I'll open it daily for 14 days. Could you test mine too? ${S.myLink} — thanks!`);
+  window.open(c.join,"_blank");window.open(c.post,"_blank");toast("답글 복사됨 → 레딧 댓글에 붙여 넣기");render()}
+function skip(i){S.skipped.push(window.CANDIDATES[i].join);save();render()}
+function renderCands(){
+  const C=window.CANDIDATES||[],taken=new Set([...S.partners.map(p=>p.link),...S.skipped]);
+  candAt.textContent=window.CANDIDATES_AT?`· ${ago(window.CANDIDATES_AT)} 업데이트`:"";
+  const show=C.map((c,i)=>[c,i]).filter(([c])=>!taken.has(c.join));
+  cands.innerHTML=!C.length?'<div class="card sub">아직 검색 결과가 없어요. <b>품앗이.bat</b>를 더블클릭하면 자동으로 찾아와요.</div>'
+   :show.length?show.slice(0,30).map(([c,i])=>`<div class="card"><b>${esc(c.title)}</b>
+     <p class="sub">r/${esc(c.sub)} · u/${esc(c.author)} · ${ago(c.time)}<br>${esc(c.summary.slice(0,140))}…</p>
+     <div class="row" style="margin-top:8px"><button onclick="swap(${i})">🤝 품앗이</button><button class="ghost" onclick="window.open('${esc(c.post)}','_blank')">글 보기</button><button class="ghost" onclick="skip(${i})">건너뛰기</button></div></div>`).join("")
+   :'<div class="card sub">새 후보를 다 봤어요. 내일 다시 <b>품앗이.bat</b>를 실행하세요.</div>';
+}
+function render(){renderCands();
+  const ps=S.partners,t=today();
+  sMine.textContent=ps.filter(p=>p.testsMine).length;
+  sToday.textContent=`${ps.filter(p=>p.days.includes(t)).length}/${ps.length}`;
+  sDay.textContent=S.myStart?`${Math.min(14,Math.floor((new Date(t)-new Date(S.myStart))/864e5)+1)}/14일`:"-";
+  list.innerHTML=ps.map(p=>{const d=p.days.length,ok=p.days.includes(t);return `<div class="card p">
+    <div class="info"><b>${esc(p.name)}</b><small>${d}/14일 테스트함 · ${p.testsMine?"✅ 내 앱도 테스트 중":"⏳ 내 앱 참여 확인 전"}${p.note?" · 📝 "+esc(p.note):""}</small><div class="bar"><i style="width:${Math.min(100,d/14*100)}%"></i></div></div>
+    <span class="tag ${ok?"done":"todo"}">${ok?"오늘 완료":"오늘 할 일"}</span>
+    <button class="ghost" onclick="openP('${p.id}')">열기</button>
+    <button class="ghost" onclick="toggleMine('${p.id}')" title="상대가 내 앱에 참여했는지">${p.testsMine?"↺":"참여✓"}</button>
+    <button class="ghost" onclick="note('${p.id}')">📝</button>
+    <button class="ghost" onclick="del('${p.id}')">✕</button></div>`}).join("")||'<p class="sub" style="text-align:center;padding:20px">아직 품앗이 상대가 없어요. 모집 글에 달린 댓글의 링크를 ③에 추가하세요.</p>';
+}
+render();
+</script>
+</body>
+</html>
